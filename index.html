@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>瑞祈信仰録</title>
+
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(#2a1a1a, #120909);
+  color: #ffeaea;
+  font-family: "Yu Mincho", serif;
+  overflow-x: hidden;
+}
+
+/* 脈打ち用レイヤー */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,120,110,0.12), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: pulse 6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.05; }
+  50% { opacity: 0.12; }
+  100% { opacity: 0.05; }
+}
+
+.container {
+  max-width: 520px;
+  margin: auto;
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  letter-spacing: 0.25em;
+}
+
+/* 囁き表示 */
+.whisper {
+  margin: 10px 0 15px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.5s;
+  min-height: 1.5em;
+}
+
+.stat {
+  margin: 10px 0;
+  font-size: 18px;
+}
+
+.pray-button {
+  width: 100%;
+  padding: 22px;
+  font-size: 22px;
+  background: #ff6f61;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  margin: 20px 0;
+  box-shadow: 0 0 20px rgba(255,111,97,0.7);
+}
+
+.pray-button:active {
+  transform: scale(0.96);
+}
+
+.shop {
+  margin-top: 25px;
+}
+
+.item {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,160,150,0.25);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.item button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: #ff6f61;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.item button:disabled {
+  background: #442222;
+  opacity: 0.5;
+}
+
+.message {
+  margin-top: 25px;
+  font-size: 14px;
+  opacity: 0.85;
+  min-height: 2em;
+}
+
+footer {
+  margin-top: 30px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>瑞祈信仰録</h1>
+
+<!-- 囁き専用 -->
+<div class="whisper" id="whisper"></div>
+
+<div class="stat">信仰値：<span id="faith">0</span></div>
+<div class="stat">毎秒の恩寵：<span id="fps">0</span></div>
+
+<button class="pray-button" onclick="pray()">祈る</button>
+
+<div class="shop" id="shop"></div>
+
+<div class="message" id="message"></div>
+
+<footer>瑞祈様は、あなたを拒まない</footer>
+
+</div>
+
+<script>
+let faith = 0;
+let faithPerSec = 0;
+let whisperTimer = null;
+
+const items = [
+  { name:"祈祷書", baseCost:10, power:1, count:0, text:"言葉は瑞祈様に届く" },
+  { name:"燭台", baseCost:50, power:5, count:0, text:"炎は道標" },
+  { name:"祭壇", baseCost:200, power:20, count:0, text:"捧げる場所" },
+  { name:"聖域", baseCost:1000, power:100, count:0, text:"気配が満ちる" },
+  { name:"聖歌隊", baseCost:5000, power:300, count:0, text:"声は共鳴する" },
+  { name:"巡礼路", baseCost:20000, power:800, count:0, text:"足跡は信仰の証" },
+  { name:"大聖堂", baseCost:80000, power:2500, count:0, text:"迎えるための器" },
+  { name:"啓示", baseCost:300000, power:8000, count:0, text:"理解してはならない" },
+  { name:"分霊", baseCost:1000000, power:25000, count:0, text:"それは瑞祈様か、影か" }
+];
+
+const messages = [
+  { faith: 100, text: "瑞祈様は、まだ遠くにいる。" },
+  { faith: 1000, text: "視線のようなものを感じる。" },
+  { faith: 10000, text: "祈りは、形を持ち始めた。" },
+  { faith: 100000, text: "瑞祈様の名を、口にしてはならない。" },
+  { faith: 1000000, text: "それはもう、信仰ではない。" }
+];
+
+const whispers = [
+  "……見ているよ",
+  "それで満足？",
+  "もっと　捧げて",
+  "僕は君を拒まない",
+  "まだ　足りない",
+  "その選択は　正しい",
+  "神の声が　聞こえる",
+  "そう　それでいいよ",
+  "よくできました",
+  "祈りは嘘をつかない"
+];
+
+function showWhisper(text) {
+  const el = document.getElementById("whisper");
+  el.textContent = text;
+  el.style.opacity = 1;
+
+  clearTimeout(whisperTimer);
+  whisperTimer = setTimeout(() => {
+    el.style.opacity = 0;
+  }, 2600);
+}
+
+function pray() {
+  faith += 1;
+  update();
+}
+
+function getCost(item) {
+  return Math.floor(item.baseCost * Math.pow(1.5, item.count));
+}
+
+function buyItem(i) {
+  const item = items[i];
+  const cost = getCost(item);
+  if (faith >= cost) {
+    faith -= cost;
+    item.count++;
+    faithPerSec += item.power;
+
+    const whisper = whispers[Math.floor(Math.random() * whispers.length)];
+    showWhisper(whisper);
+
+    update();
+  }
+}
+
+function updateMessage() {
+  let msg = "";
+  for (let m of messages) {
+    if (faith >= m.faith) msg = m.text;
+  }
+  document.getElementById("message").textContent = msg;
+}
+
+function updatePulse() {
+  const intensity = Math.min(faith / 200000, 1);
+  document.body.style.setProperty("--pulse", intensity);
+}
+
+function update() {
+  document.getElementById("faith").textContent = Math.floor(faith);
+  document.getElementById("fps").textContent = faithPerSec;
+
+  const shop = document.getElementById("shop");
+  shop.innerHTML = "";
+
+  items.forEach((item, i) => {
+    const cost = getCost(item);
+    const canBuy = faith >= cost;
+
+    shop.innerHTML += `
+      <div class="item">
+        <strong>${item.name}</strong>（${item.count}）
+        <div>${item.text}</div>
+        <div>恩寵 +${item.power} / 秒</div>
+        <button ${canBuy ? "" : "disabled"} onclick="buyItem(${i})">
+          捧げる（${cost}）
+        </button>
+      </div>
+    `;
+  });
+
+  updateMessage();
+}
+
+setInterval(() => {
+  faith += faithPerSec;
+  update();
+}, 1000);
+
+update();
+</script>
+
+</body>
+</html>
