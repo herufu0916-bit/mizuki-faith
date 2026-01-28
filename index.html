@@ -25,15 +25,14 @@ h1 {
   letter-spacing: 0.25em;
 }
 
-/* タイトル下の画像 */
+/* タイトル下の画像（縁ブラー対策） */
 .title-image {
   width: 100%;
   max-width: 360px;
   margin: 15px auto 5px;
   display: block;
   border-radius: 14px;
-  opacity: 0.9;
-  box-shadow: 0 0 20px rgba(255,111,97,0.35);
+  filter: drop-shadow(0 0 12px rgba(255,111,97,0.4));
 }
 
 /* 囁き表示 */
@@ -116,7 +115,6 @@ footer {
 
 <img src="mizuki_halo.png" alt="瑞祈の象徴" class="title-image">
 
-<!-- 囁き専用 -->
 <div class="whisper" id="whisper"></div>
 
 <div class="stat">信仰値：<span id="faith">0</span></div>
@@ -125,7 +123,6 @@ footer {
 <button class="pray-button" onclick="pray()">祈る</button>
 
 <div class="shop" id="shop"></div>
-
 <div class="message" id="message"></div>
 
 <footer>瑞祈様は、あなたを拒まない</footer>
@@ -138,15 +135,20 @@ let faithPerSec = 0;
 let whisperTimer = null;
 
 const items = [
-  { name:"祈祷書", baseCost:10, power:1, count:0, text:"言葉は瑞祈様に届く" },
-  { name:"燭台", baseCost:50, power:5, count:0, text:"炎は道標" },
-  { name:"祭壇", baseCost:200, power:20, count:0, text:"捧げる場所" },
-  { name:"聖域", baseCost:1000, power:100, count:0, text:"気配が満ちる" },
-  { name:"聖歌隊", baseCost:5000, power:300, count:0, text:"声は共鳴する" },
-  { name:"巡礼路", baseCost:20000, power:800, count:0, text:"足跡は信仰の証" },
-  { name:"大聖堂", baseCost:80000, power:2500, count:0, text:"迎えるための器" },
-  { name:"啓示", baseCost:300000, power:8000, count:0, text:"理解してはならない" },
-  { name:"分霊", baseCost:1000000, power:25000, count:0, text:"それは瑞祈様か、影か" }
+  { name:"祈祷書", baseCost:10, power:1, count:0, text:"言葉は瑞祈様に届く", unlock:0 },
+  { name:"燭台", baseCost:50, power:5, count:0, text:"炎は道標", unlock:0 },
+  { name:"祭壇", baseCost:200, power:20, count:0, text:"捧げる場所", unlock:0 },
+  { name:"聖域", baseCost:1000, power:100, count:0, text:"気配が満ちる", unlock:500 },
+  { name:"聖歌隊", baseCost:5000, power:300, count:0, text:"声は共鳴する", unlock:2000 },
+  { name:"巡礼路", baseCost:20000, power:800, count:0, text:"足跡は信仰の証", unlock:8000 },
+  { name:"大聖堂", baseCost:80000, power:2500, count:0, text:"迎えるための器", unlock:30000 },
+  { name:"啓示", baseCost:300000, power:8000, count:0, text:"理解してはならない", unlock:100000 },
+  { name:"分霊", baseCost:1000000, power:25000, count:0, text:"それは瑞祈様か、影か", unlock:300000 },
+
+  /* 後半追加 */
+  { name:"黙示録", baseCost:5000000, power:80000, count:0, text:"読んではならない", unlock:1000000 },
+  { name:"降臨準備", baseCost:20000000, power:300000, count:0, text:"器は整えられた", unlock:5000000 },
+  { name:"神体", baseCost:100000000, power:1200000, count:0, text:"それは信仰の終わり", unlock:20000000 }
 ];
 
 const messages = [
@@ -181,13 +183,19 @@ function showWhisper(text) {
   }, 2600);
 }
 
+/* 祈る：1増えるのは絶対に変更しない */
 function pray() {
   faith += 1;
   update();
 }
 
+/* 後半ほどコスト上昇が重くなる */
 function getCost(item) {
-  return Math.floor(item.baseCost * Math.pow(1.5, item.count));
+  let rate = 1.5;
+  if (item.baseCost >= 5000) rate = 1.7;
+  if (item.baseCost >= 80000) rate = 1.85;
+  if (item.baseCost >= 5000000) rate = 2.0;
+  return Math.floor(item.baseCost * Math.pow(rate, item.count));
 }
 
 function buyItem(i) {
@@ -221,6 +229,8 @@ function update() {
   shop.innerHTML = "";
 
   items.forEach((item, i) => {
+    if (faith < item.unlock) return;
+
     const cost = getCost(item);
     const canBuy = faith >= cost;
 
