@@ -4,43 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>瑞祈信仰録</title>
-<img src="ヘイロー.png" alt="瑞祈の象徴" class="title-image">
 
-  
 <style>
-  .title-image {
-  width: 100%;
-  max-width: 360px;
-  margin: 15px auto 5px;
-  display: block;
-  border-radius: 14px;
-  opacity: 0.9;
-  box-shadow: 0 0 20px rgba(255,111,97,0.35);
-}
-
 body {
   margin: 0;
   background: radial-gradient(#2a1a1a, #120909);
   color: #ffeaea;
   font-family: "Yu Mincho", serif;
   overflow-x: hidden;
-}
-
-/* 脈打ち用レイヤー */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(255,120,110,0.12), transparent 70%);
-  opacity: 0;
-  pointer-events: none;
-  animation: pulse 6s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.05; }
-  50% { opacity: 0.12; }
-  100% { opacity: 0.05; }
 }
 
 .container {
@@ -52,6 +23,17 @@ body::before {
 
 h1 {
   letter-spacing: 0.25em;
+}
+
+/* タイトル下の画像 */
+.title-image {
+  width: 100%;
+  max-width: 360px;
+  margin: 15px auto 5px;
+  display: block;
+  border-radius: 14px;
+  opacity: 0.9;
+  box-shadow: 0 0 20px rgba(255,111,97,0.35);
 }
 
 /* 囁き表示 */
@@ -131,6 +113,8 @@ footer {
 <div class="container">
 
 <h1>瑞祈信仰録</h1>
+
+<img src="mizuki_halo.png" alt="瑞祈の象徴" class="title-image">
 
 <!-- 囁き専用 -->
 <div class="whisper" id="whisper"></div>
@@ -227,11 +211,6 @@ function updateMessage() {
     if (faith >= m.faith) msg = m.text;
   }
   document.getElementById("message").textContent = msg;
-}
-
-function updatePulse() {
-  const intensity = Math.min(faith / 200000, 1);
-  document.body.style.setProperty("--pulse", intensity);
 }
 
 function update() {
